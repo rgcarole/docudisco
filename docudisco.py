@@ -8,6 +8,7 @@ import getpass
 import errno
 import urllib
 import urllib2
+import web
 
 from urllib2 import urlopen
 from json import dumps
@@ -21,7 +22,8 @@ apiServer="api.weaved.com"
 apiKey="WeavedDemoKey$2015"
 
 #===============================================
-if __name__ == '__main__':
+
+def weavedConnect():
 
     httplib2.debuglevel     = 0
     http                    = httplib2.Http()
@@ -63,17 +65,16 @@ if __name__ == '__main__':
         
     print "Token = " +  token
 
-deviceListURL = apiMethod + apiServer + apiVersion + "/api/device/list/all"
-content_type_header     = "application/json"
+    deviceListURL = apiMethod + apiServer + apiVersion + "/api/device/list/all"
+    content_type_header     = "application/json"
 
-deviceListHeaders = {
+    deviceListHeaders = {
                 'Content-Type': content_type_header,
                 'apikey': apiKey,
                 # you need to get token from a call to /user/login
                 'token': token,
             }
-
-if __name__ == '__main__':            
+           
     httplib2.debuglevel     = 0
     http                    = httplib2.Http()
 
@@ -97,7 +98,6 @@ if __name__ == '__main__':
     print "UID = " +  UID
 
 
-def proxyConnect(UID, token):
     httplib2.debuglevel     = 0
     http                    = httplib2.Http()
     content_type_header     = "application/json"
@@ -125,17 +125,32 @@ def proxyConnect(UID, token):
                                        )
     try:
         data = json.loads(content)["connection"]["proxy"]
-        return data
+        URL = data
     except KeyError:
         print "Key Error exception!"
         print content
+	
+    print "URL = " + URL
    
+    c_url = URL
+    data = '{"type":"customer.card.created"}'
+    req = urllib2.Request(c_url, data)
+    response = urllib2.urlopen(req)
+    
+
+urls = ('/.*', 'hooks')
+
+app = web.application(urls, globals())
+
+class hooks:
+    def POST(self):
+        data = web.data()
+        print
+        print 'DATA RECEIVED:'
+        print data
+	weavedConnect()
+        print
+        return 'OK'
+
 if __name__ == '__main__':
-	URL = proxyConnect(UID, token)
-
-print "URL = " + URL
-
-c_url = URL
-data = '{"type":"customer.card.created"}'
-req = urllib2.Request(c_url, data)
-#response = urllib2.urlopen(req)
+    app.run()
